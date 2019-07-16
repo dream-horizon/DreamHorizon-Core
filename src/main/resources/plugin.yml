@@ -1,0 +1,9 @@
+name: DHCore
+version: ${project.version}
+main: com.dreamhorizon.core.DHCore
+api-version: 1.13
+prefix: DHCore
+load: STARTUP
+authors: [Articdive, FliX]
+description: Plugin that contains the core methods and database for Dream-Horizon.com
+website: www.dream-horizon.com
