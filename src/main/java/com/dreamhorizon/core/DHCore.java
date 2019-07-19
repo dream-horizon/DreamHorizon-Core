@@ -18,8 +18,10 @@
 
 package com.dreamhorizon.core;
 
+import com.dreamhorizon.core.commands.CommandHandler;
 import com.dreamhorizon.core.configuration.ConfigurationHandler;
 import com.dreamhorizon.core.configuration.enums.CoreConfiguration;
+import com.dreamhorizon.core.configuration.enums.Message;
 import com.dreamhorizon.core.database.DatabaseHandler;
 import com.dreamhorizon.core.logging.LoggingHandler;
 import com.dreamhorizon.core.modulation.ModuleHandler;
@@ -31,32 +33,40 @@ import org.bukkit.plugin.java.JavaPlugin;
  * @since 1.0
  */
 public final class DHCore extends JavaPlugin {
-    private LoggingHandler loggingHandler = LoggingHandler.getInstance();
-    private ConfigurationHandler configurationHandler = ConfigurationHandler.getInstance();
+    private final LoggingHandler loggingHandler = LoggingHandler.getInstance();
+    private final ConfigurationHandler configurationHandler = ConfigurationHandler.getInstance();
+    private CommandHandler commandHandler;
+    private ModuleHandler moduleHandler;
     private DatabaseHandler databaseHandler;
     
     @Override
     public void onLoad() {
         super.onLoad();
         // Update version
-        ConfigurationHandler.getInstance().getConfigs().get("core").set(CoreConfiguration.VERSION, this.getDescription().getVersion());
-        databaseHandler = DatabaseHandler.getInstance();
+        ConfigurationHandler.getInstance().getConfig("core").set(CoreConfiguration.VERSION, this.getDescription().getVersion());
     }
     
     @Override
     public void onEnable() {
         super.onEnable();
         // Essential Handlers.
+        // Commands before modules because modules need to hook into them.
+        commandHandler = CommandHandler.getInstance();
+        // Modules before Database becauses database needs a list of objects.
+        moduleHandler = ModuleHandler.getInstance();
+        databaseHandler = DatabaseHandler.getInstance();
         // Open DB Connection.
         if (databaseHandler != null) {
             databaseHandler.open();
         }
-        ModuleHandler.getInstance();
-        // Listeners, Events and Commands.
+        // Listeners
         registerListeners();
-        
         // Start the UpdateGlobalPlaceHolders runnable, which will just update our global placeholders every minute.
         new GlobalPlaceHolderTask().runTaskTimer(this, 0, 6000L);
+        
+        getLogger().info((String) ConfigurationHandler.getInstance().getConfig("messages").get(Message.CORE_ENABLED));
+        // Finally, since everything is setup let the modules do their thing.
+        moduleHandler.enableModules();
     }
     
     private void registerListeners() {
@@ -65,9 +75,38 @@ public final class DHCore extends JavaPlugin {
     @Override
     public void onDisable() {
         super.onDisable();
+        moduleHandler.disableModules();
         // Close DatabaseHandler
         if (databaseHandler != null) {
             databaseHandler.close();
         }
+        getLogger().info((String) ConfigurationHandler.getInstance().getConfig("messages").get(Message.CORE_DISABLED));
     }
+    
+    @SuppressWarnings("unused")
+    public LoggingHandler getLoggingHandler() {
+        return loggingHandler;
+    }
+    
+    @SuppressWarnings("unused")
+    public ConfigurationHandler getConfigurationHandler() {
+        return configurationHandler;
+    }
+    
+    @SuppressWarnings("unused")
+    public CommandHandler getCommandHandler() {
+        return commandHandler;
+    }
+    
+    @SuppressWarnings("unused")
+    public ModuleHandler getModuleHandler() {
+        return moduleHandler;
+    }
+    
+    @SuppressWarnings("unused")
+    public DatabaseHandler getDatabaseHandler() {
+        return databaseHandler;
+    }
+    
+    
 }

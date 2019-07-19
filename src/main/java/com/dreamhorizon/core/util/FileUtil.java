@@ -66,12 +66,12 @@ public class FileUtil {
                 LOGGER.log(Level.ERROR, "File " + file.getPath() + " couldn't be created.");
                 return false;
             }
+            return true;
         } catch (IOException e) {
-            LOGGER.log(Level.ERROR, "An unexpected error occured while creating file " + file.getPath());
+            LOGGER.log(Level.ERROR, "An unexpected error occured while creating file " + file.getPath() + ".");
             LOGGER.log(Level.ERROR, e);
             e.printStackTrace();
             return false;
         }
-        return true;
     }
 }

@@ -48,19 +48,19 @@ public enum CoreConfiguration implements ConfigurationNode {
     DATABASE_TYPE("database.type", "mysql",
             "# Database type."
     ),
-    DATABASE_HOSTNAME("database.hostname", "remotemysql.com",
+    DATABASE_HOSTNAME("database.hostname", "localhost",
             "# Database hostname."
     ),
     DATABASE_PORT("database.port", "3306",
             "# Database port."
     ),
-    DATABASE_SCHEMA_NAME("database.schema", "RwCrwiKMTe",
+    DATABASE_SCHEMA_NAME("database.schema", "minecraft",
             "# Database schema."
     ),
-    DATABASE_USERNAME("database.username", "RwCrwiKMTe",
+    DATABASE_USERNAME("database.username", "root",
             "# Database username."
     ),
-    DATABASE_PASSWORD("database.password", "N7rB6kDKBB",
+    DATABASE_PASSWORD("database.password", "password",
             "# Database password."
     );
     
@@ -75,17 +75,14 @@ public enum CoreConfiguration implements ConfigurationNode {
     }
     
     
-    @Override
     public String getPath() {
         return path;
     }
     
-    @Override
     public Object getDefaultValue() {
         return defaultValue;
     }
     
-    @Override
     public String[] getComments() {
         return comments;
     }

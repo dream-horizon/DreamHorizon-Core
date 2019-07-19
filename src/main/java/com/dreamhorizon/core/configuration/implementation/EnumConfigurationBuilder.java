@@ -32,12 +32,12 @@ public class EnumConfigurationBuilder {
     private final File saveFile;
     private final List<ConfigurationNode> configurationNodes;
     
-    public <T extends Enum<T> & ConfigurationNode> EnumConfigurationBuilder(File file, Class<T> enumClass) {
+    public EnumConfigurationBuilder(File file, Class<? extends ConfigurationNode> enumClass) {
         this.loadFile = file;
         this.saveFile = file;
         this.configurationNodes = new LinkedList<>(Arrays.asList(enumClass.getEnumConstants()));
     }
-    
+
 //    public <T extends Enum<T> & ConfigurationNode> EnumConfigurationBuilder withConfigurationNodes(Class<T> enumClass) {
 //        this.configurationNodes = new LinkedList<>(Arrays.asList(enumClass.getEnumConstants()));
 //        return this;

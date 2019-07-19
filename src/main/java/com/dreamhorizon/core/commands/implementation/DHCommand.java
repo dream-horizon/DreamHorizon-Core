@@ -16,31 +16,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.dreamhorizon.core.modulation.implementation;
+package com.dreamhorizon.core.commands.implementation;
 
-import com.dreamhorizon.core.commands.implementation.DHCommand;
-import com.dreamhorizon.core.configuration.implementation.ConfigurationNode;
-import org.bukkit.event.Listener;
-
-import java.util.List;
-import java.util.Map;
+import co.aikar.commands.BaseCommand;
 
 /**
  * @author Lukas Mansour
  * @since 1.0
  */
-public abstract class Module {
-    public abstract List<Listener> getListeners();
-    
-    public abstract List<DHCommand> getCommands();
-    
-    public abstract void onEnable();
-    
-    public abstract void onDisable();
-    
-    public abstract Map<String, Class<? extends ConfigurationNode>> getModuleConfigNodes();
-    
-    public abstract String getSchemaResourcesPath();
-    
-    public abstract List<String> getSchemaProperties();
+public abstract class DHCommand extends BaseCommand {
 }

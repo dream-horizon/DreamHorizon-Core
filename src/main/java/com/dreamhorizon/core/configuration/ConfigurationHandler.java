@@ -19,6 +19,7 @@
 package com.dreamhorizon.core.configuration;
 
 import com.dreamhorizon.core.configuration.enums.CoreConfiguration;
+import com.dreamhorizon.core.configuration.enums.Message;
 import com.dreamhorizon.core.configuration.implementation.ConfigurationNode;
 import com.dreamhorizon.core.configuration.implementation.EnumConfiguration;
 import com.dreamhorizon.core.configuration.implementation.EnumConfigurationBuilder;
@@ -37,9 +38,10 @@ public class ConfigurationHandler {
     
     private ConfigurationHandler() {
         configs.put("core", new EnumConfigurationBuilder(new File(configFolder + File.separator + "config.yml"), CoreConfiguration.class).build());
+        configs.put("messages", new EnumConfigurationBuilder(new File(configFolder + File.separator + "messages.yml"), Message.class).build());
     }
     
-    public <T extends Enum<T> & ConfigurationNode> void addConfig(String name, Class<T> enumClass) {
+    public <T extends Enum<T> & ConfigurationNode> void addConfig(String name, Class<? extends ConfigurationNode> enumClass) {
         configs.put(name, new EnumConfigurationBuilder(new File(configFolder + File.separator + name + ".yml"), enumClass).build());
     }
     
@@ -47,8 +49,8 @@ public class ConfigurationHandler {
         return configFolder;
     }
     
-    public HashMap<String, EnumConfiguration> getConfigs() {
-        return configs;
+    public EnumConfiguration getConfig(String configName) {
+        return configs.get(configName);
     }
     
     public static ConfigurationHandler getInstance() {

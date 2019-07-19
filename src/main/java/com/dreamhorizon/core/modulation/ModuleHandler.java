@@ -19,6 +19,7 @@
 package com.dreamhorizon.core.modulation;
 
 import com.dreamhorizon.core.DHCore;
+import com.dreamhorizon.core.commands.CommandHandler;
 import com.dreamhorizon.core.configuration.ConfigurationHandler;
 import com.dreamhorizon.core.modulation.implementation.Module;
 import com.dreamhorizon.core.modulation.implementation.ModuleEntry;
@@ -34,8 +35,8 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bukkit.Bukkit;
+import org.jetbrains.annotations.Nullable;
 
-import javax.annotation.Nullable;
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -97,16 +98,17 @@ public class ModuleHandler {
                         .disableNestedJarScanning()
                         .whitelistJars(moduleJar.getName())
                         .scan();
-                ClassInfoList classInfoList = scanResult.getClassesWithAnnotation(ModuleInfo.class.getCanonicalName());
-                if (classInfoList == null || classInfoList.isEmpty()) {
+                // Get module class, which is annotated with @ModuleInfo
+                ClassInfoList classInfoListAnnotations = scanResult.getClassesWithAnnotation(ModuleInfo.class.getCanonicalName());
+                if (classInfoListAnnotations == null || classInfoListAnnotations.isEmpty()) {
                     LOGGER.log(Level.ERROR, "[Module] Module's main class could not be found for Module: " + moduleJar.getName());
                     continue;
                 }
-                if (classInfoList.size() >= 2) {
+                if (classInfoListAnnotations.size() >= 2) {
                     LOGGER.log(Level.ERROR, "[Module] Module " + moduleJar.getName() + " had more than 1 main class.");
                     continue;
                 }
-                ClassInfo classInfo = classInfoList.get(0);
+                ClassInfo classInfo = classInfoListAnnotations.get(0);
                 if (!classInfo.extendsSuperclass(Module.class.getCanonicalName())) {
                     LOGGER.log(Level.ERROR, "[Module] " + moduleJar.getName() + "'s main class was found, however it doesn't extend the module superclass.");
                     continue;
@@ -127,13 +129,32 @@ public class ModuleHandler {
         
         for (ModuleEntry moduleEntry : getModuleEntries()) {
             Module module = moduleEntry.getModule();
-            // Let the module run it's own loading code
-            module.onEnable();
             // add Configs
-            ConfigurationHandler.getInstance().addConfig(moduleEntry.getName(), module.getModuleLanguageNodes());
+            if (module.getModuleConfigNodes() != null && !module.getModuleConfigNodes().isEmpty()) {
+                module.getModuleConfigNodes().forEach((s, aClass) -> ConfigurationHandler.getInstance().addConfig(s, aClass));
+            }
             // add Listeners
-            module.getListeners().forEach(listener -> Bukkit.getPluginManager().registerEvents(listener, DHCore.getPlugin(DHCore.class)));
-            // TODO: Add Commands: (A little more complicated)
+            if (module.getListeners() != null && !module.getListeners().isEmpty()) {
+                module.getListeners().forEach(listener -> Bukkit.getPluginManager().registerEvents(listener, DHCore.getPlugin(DHCore.class)));
+            }
+            // add Commands
+            if (module.getCommands() != null && !module.getCommands().isEmpty()) {
+                module.getCommands().forEach(command -> CommandHandler.getInstance().registerCommand(command));
+            }
+            // TODO: Command Completions, Contexts and Conditions (Aikar's Command Framework)
+            
+        }
+    }
+    
+    public void enableModules() {
+        for (Module module : getModules()) {
+            module.onEnable();
+        }
+    }
+    
+    public void disableModules() {
+        for (Module module : getModules()) {
+            module.onDisable();
         }
     }
     

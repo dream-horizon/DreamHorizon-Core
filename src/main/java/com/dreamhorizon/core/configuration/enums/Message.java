@@ -16,31 +16,36 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.dreamhorizon.core.modulation.implementation;
+package com.dreamhorizon.core.configuration.enums;
 
-import com.dreamhorizon.core.commands.implementation.DHCommand;
 import com.dreamhorizon.core.configuration.implementation.ConfigurationNode;
-import org.bukkit.event.Listener;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * @author Lukas Mansour
  * @since 1.0
  */
-public abstract class Module {
-    public abstract List<Listener> getListeners();
+public enum Message implements ConfigurationNode {
+    CORE_ENABLED("core_enabled", "DreamHorizonCore has been fully enabled."),
+    CORE_DISABLED("core_disabled", "DreamHorizonCore has been fully disabled.");
     
-    public abstract List<DHCommand> getCommands();
+    private final String path;
+    private final Object defaultValue;
     
-    public abstract void onEnable();
+    Message(String path, Object defaultValue) {
+        this.path = path;
+        this.defaultValue = defaultValue;
+    }
     
-    public abstract void onDisable();
     
-    public abstract Map<String, Class<? extends ConfigurationNode>> getModuleConfigNodes();
+    public String getPath() {
+        return path;
+    }
     
-    public abstract String getSchemaResourcesPath();
+    public Object getDefaultValue() {
+        return defaultValue;
+    }
     
-    public abstract List<String> getSchemaProperties();
+    public String[] getComments() {
+        return new String[0];
+    }
 }

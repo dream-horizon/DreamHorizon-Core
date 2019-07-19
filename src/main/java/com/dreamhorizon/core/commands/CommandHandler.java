@@ -16,31 +16,28 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.dreamhorizon.core.modulation.implementation;
+package com.dreamhorizon.core.commands;
 
+import co.aikar.commands.PaperCommandManager;
+import com.dreamhorizon.core.DHCore;
 import com.dreamhorizon.core.commands.implementation.DHCommand;
-import com.dreamhorizon.core.configuration.implementation.ConfigurationNode;
-import org.bukkit.event.Listener;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * @author Lukas Mansour
  * @since 1.0
  */
-public abstract class Module {
-    public abstract List<Listener> getListeners();
+public class CommandHandler {
+    private static final CommandHandler instance = new CommandHandler();
+    private final PaperCommandManager manager = new PaperCommandManager(DHCore.getPlugin(DHCore.class));
     
-    public abstract List<DHCommand> getCommands();
+    private CommandHandler() {
+    }
     
-    public abstract void onEnable();
+    public void registerCommand(DHCommand command) {
+        manager.registerCommand(command);
+    }
     
-    public abstract void onDisable();
-    
-    public abstract Map<String, Class<? extends ConfigurationNode>> getModuleConfigNodes();
-    
-    public abstract String getSchemaResourcesPath();
-    
-    public abstract List<String> getSchemaProperties();
+    public static CommandHandler getInstance() {
+        return instance;
+    }
 }

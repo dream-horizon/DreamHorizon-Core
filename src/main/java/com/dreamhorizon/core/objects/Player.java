@@ -16,31 +16,26 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.dreamhorizon.core.modulation.implementation;
+package com.dreamhorizon.core.objects;
 
-import com.dreamhorizon.core.commands.implementation.DHCommand;
-import com.dreamhorizon.core.configuration.implementation.ConfigurationNode;
-import org.bukkit.event.Listener;
+import org.javalite.activejdbc.Model;
+import org.javalite.activejdbc.annotations.DbName;
+import org.javalite.activejdbc.annotations.Table;
 
-import java.util.List;
-import java.util.Map;
+import java.util.UUID;
 
 /**
  * @author Lukas Mansour
  * @since 1.0
  */
-public abstract class Module {
-    public abstract List<Listener> getListeners();
+@Table("PLAYERS")
+@DbName("DreamHorizonCore")
+public class Player extends Model {
+    public UUID getUUID() {
+        return UUID.fromString((String) get("uuid"));
+    }
     
-    public abstract List<DHCommand> getCommands();
-    
-    public abstract void onEnable();
-    
-    public abstract void onDisable();
-    
-    public abstract Map<String, Class<? extends ConfigurationNode>> getModuleConfigNodes();
-    
-    public abstract String getSchemaResourcesPath();
-    
-    public abstract List<String> getSchemaProperties();
+    public void setUUID(UUID uuid) {
+        set("uuid", uuid.toString());
+    }
 }

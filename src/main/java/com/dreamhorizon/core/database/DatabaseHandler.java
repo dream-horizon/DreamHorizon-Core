@@ -21,8 +21,13 @@ package com.dreamhorizon.core.database;
 import com.dreamhorizon.core.configuration.ConfigurationHandler;
 import com.dreamhorizon.core.configuration.enums.CoreConfiguration;
 import com.dreamhorizon.core.configuration.implementation.EnumConfiguration;
+import com.dreamhorizon.core.modulation.ModuleHandler;
+import com.dreamhorizon.core.modulation.implementation.Module;
+import com.dreamhorizon.core.util.FileUtil;
 import io.github.classgraph.ClassGraph;
+import io.github.classgraph.ClassInfoList;
 import io.github.classgraph.ScanResult;
+import liquibase.ContextExpression;
 import liquibase.Contexts;
 import liquibase.LabelExpression;
 import liquibase.Liquibase;
@@ -30,26 +35,27 @@ import liquibase.database.Database;
 import liquibase.database.DatabaseFactory;
 import liquibase.database.jvm.JdbcConnection;
 import liquibase.exception.LiquibaseException;
-import liquibase.resource.FileSystemResourceAccessor;
+import liquibase.resource.ClassLoaderResourceAccessor;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.bukkit.entity.Player;
 import org.javalite.activejdbc.DB;
+import org.javalite.activejdbc.Model;
+import org.javalite.activejdbc.Registry;
 import org.javalite.activejdbc.annotations.Table;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.sql.Connection;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * @author Lukas Mansour
@@ -58,9 +64,9 @@ import java.util.regex.Pattern;
 public class DatabaseHandler {
     private static final Logger LOGGER = LogManager.getLogger("com.dreamhorizon.core");
     private static DatabaseHandler instance = null;
-    private final EnumConfiguration coreConfig = ConfigurationHandler.getInstance().getConfigs().get("core");
+    private final EnumConfiguration coreConfig = ConfigurationHandler.getInstance().getConfig("core");
     private final String dbTablePrefix = (String) coreConfig.get(CoreConfiguration.DATABASE_TABLE_PREFIX);
-    private final DB db = new DB("DreamHorizonCore");
+    private final DB db;
     private final String username = (String) coreConfig.get(CoreConfiguration.DATABASE_USERNAME);
     private final String password = (String) coreConfig.get(CoreConfiguration.DATABASE_PASSWORD);
     private String driver;
@@ -68,44 +74,84 @@ public class DatabaseHandler {
     
     private DatabaseHandler() {
         String dbType = (String) coreConfig.get(CoreConfiguration.DATABASE_TYPE);
-        // Add more DBs if necessary
-        switch (dbType.toLowerCase()) {
-            case "mysql": {
-                driver = "com.mysql.jdbc.Driver";
-                jdbcURL = "jdbc:mysql://" + coreConfig.get(CoreConfiguration.DATABASE_HOSTNAME)
-                        + "/" + coreConfig.get(CoreConfiguration.DATABASE_SCHEMA_NAME)
-                        + "?verifyServerCertificate=false&useSSL=false&useUnicode=true&characterEncoding=utf-8";
-                break;
-            }
-            default: {
-                LOGGER.log(Level.ERROR, "[Database] " + dbType + " is not a valid database type!");
-                throw new IllegalArgumentException(dbType + " is not a valid database type!");
-            }
+        // Add more DBs if necessary, in that case also use a switch clause for slighty better performance.
+        if ("mysql".equals(dbType.toLowerCase())) {
+            driver = "com.mysql.jdbc.Driver";
+            jdbcURL = "jdbc:mysql://" + coreConfig.get(CoreConfiguration.DATABASE_HOSTNAME)
+                    + ":" + coreConfig.get(CoreConfiguration.DATABASE_PORT)
+                    + "/" + coreConfig.get(CoreConfiguration.DATABASE_SCHEMA_NAME)
+                    + "?verifyServerCertificate=false&useSSL=false&useUnicode=true&characterEncoding=utf-8";
+        } else {
+            LOGGER.log(Level.ERROR, "[Database] " + dbType + " is not a valid database type!");
+            throw new IllegalArgumentException(dbType + " is not a valid database type!");
         }
-        // Use classgraph to get all @Table classes.
-        // Use the setAnnotation method to update their tables to add the prefix.
+        
+        File modelsFile = new File("plugins" + File.separator + "DHCore" + File.separator + "database" + File.separator + "models" + File.separator + "activejdbc_models.properties");
+        if (!FileUtil.createFolder(modelsFile.getParentFile())) {
+            LOGGER.log(Level.ERROR, "[Database] Failed to create ActiveJDBC models parent file.");
+            db = null;
+            return;
+        }
         try (ScanResult scanResult = new ClassGraph()
                 .addClassLoader(this.getClass().getClassLoader())
                 .enableClassInfo()
                 .ignoreClassVisibility()
                 .enableAnnotationInfo()
-                .whitelistPackages("com.dreamhorizon.core.objects")
+                .whitelistPackages()
                 .disableDirScanning()
                 .disableNestedJarScanning()
                 .disableModuleScanning()
                 .scan()) {
-            scanResult.getClassesWithAnnotation("org.javalite.activejdbc.annotations.Table")
-                    .forEach(classInfo -> {
-                        try {
-                            setTable(classInfo.loadClass());
-                        } catch (NoSuchFieldException | IllegalAccessException e) {
-                            LOGGER.log(Level.ERROR, "[Database] An unexpected error occured while setting object tables.");
-                            LOGGER.log(Level.ERROR, e);
-                            e.printStackTrace();
-                        }
-                    });
+            ClassInfoList classInfoList = scanResult.getSubclasses(Model.class.getCanonicalName());
+            if (classInfoList == null || classInfoList.isEmpty()) {
+                LOGGER.log(Level.DEBUG, "[Database] No objects were found for the database.");
+                db = null;
+                return;
+            }
+            
+            try {
+                FileWriter writer = new FileWriter(modelsFile, false);
+                classInfoList.forEach(classInfo -> {
+                    try {
+                        // Use classgraph to get all @Table classes.
+                        // Use the setAnnotation method to update their tables to add the prefix.
+                        setTable(classInfo.loadClass());
+                        // Use Commons Configuration to add them to the model configuration.
+                        writer.write(classInfo.getName() + ":" + "DreamHorizonCore" + System.getProperty("line.separator"));
+                    } catch (IllegalAccessException | NoSuchFieldException e) {
+                        LOGGER.log(Level.ERROR, "[Database] An unexpected error occured while setting object table annotations and instrumentation.");
+                        LOGGER.log(Level.ERROR, e);
+                        e.printStackTrace();
+                    } catch (IOException e) {
+                        LOGGER.log(Level.ERROR, "[Database] An unexpected error occured while creating the ActiveJDBC models file.");
+                        LOGGER.log(Level.ERROR, e);
+                        e.printStackTrace();
+                    }
+                });
+                writer.close();
+            } catch (IOException e) {
+                LOGGER.log(Level.ERROR, "[Database] An unexpected error occured while creating the ActiveJDBC models file.");
+                LOGGER.log(Level.ERROR, e);
+                e.printStackTrace();
+            }
+        }
+        // add the now created properties file to the classpath for ActiveJDBC to see.
+        try {
+            // Add to classpath.
+            URLClassLoader classLoader = (URLClassLoader) DatabaseHandler.class.getClassLoader();
+            Method method = classLoader.getClass().getSuperclass().getDeclaredMethod("addURL", URL.class);
+            method.setAccessible(true);
+            method.invoke(classLoader, modelsFile.getParentFile().toURI().toURL());
+            // Add to ActiveJDBC.
+            Registry.INSTANCE.setModelFile(modelsFile.getName());
+            
+        } catch (MalformedURLException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+            LOGGER.log(Level.ERROR, "[Database] An unexpected error occured while adding/creating the ActiveJDBC models file.");
+            LOGGER.log(Level.ERROR, e);
+            e.printStackTrace();
         }
         
+        db = new DB("DreamHorizonCore");
         // Connect to DB.
         db.open(driver, jdbcURL, username, password);
         // Liquibase generate Schema.
@@ -121,75 +167,51 @@ public class DatabaseHandler {
         db.close();
     }
     
-    @SuppressWarnings("ConstantConditions")
     private void generateSchema(Connection connection) {
         try {
-            File databaseChangelog = new File("plugins" + File.separator + "DHCore" + File.separator + "database" + File.separator + "database-schema.xml");
-            if (!databaseChangelog.getParentFile().mkdirs() && !databaseChangelog.getParentFile().isDirectory()) {
-                return;
-            }
-            BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(
-                            this.getClass().getClassLoader().getResourceAsStream("database-schema.xml")
-                    )
-            );
-            PrintWriter writer = new PrintWriter(new FileOutputStream(databaseChangelog));
-            
-            String str;
-            int lineNumber = 1;
-            Pattern pattern = Pattern.compile(".*/(.*?)/.*");
-            while ((str = reader.readLine()) != null) {
-                if (lineNumber >= 3 && lineNumber <= 5) {
-                    Matcher m = pattern.matcher(str);
-                    if (m.find()) {
-                        str = str.replace("/" + m.group(1) + "/", dbTablePrefix + m.group(1));
-                    }
-                }
-                writer.println(str);
-                lineNumber = lineNumber + 1;
-            }
-            writer.close();
-            reader.close();
-            
             Database database = DatabaseFactory.getInstance().findCorrectDatabaseImplementation(new JdbcConnection(connection));
             Liquibase liquibase = new Liquibase(
-                    databaseChangelog.getAbsolutePath()
-                    , new FileSystemResourceAccessor(), database
+                    "db/database-master.xml",
+                    new ClassLoaderResourceAccessor(), database
             );
+            // Add our own parameters here.
+            liquibase.setChangeLogParameter("players", dbTablePrefix + "PLAYERS");
+            for (Module module : ModuleHandler.getInstance().getModules()) {
+                // parameters before including other changelogs (IMPORTANT)
+                if (module.getSchemaProperties() != null && !module.getSchemaProperties().isEmpty()) {
+                    module.getSchemaProperties().forEach(s -> liquibase.setChangeLogParameter(s, dbTablePrefix + s.toUpperCase()));
+                }
+                // module schemas need to be loaded into the main database changelog.
+                if (module.getSchemaResourcesPath() != null && !module.getSchemaResourcesPath().isEmpty()) {
+                    liquibase.getDatabaseChangeLog().include(module.getSchemaResourcesPath(), false, new ClassLoaderResourceAccessor(), new ContextExpression(), true);
+                }
+            }
+            
             liquibase.update(new Contexts(), new LabelExpression());
-        } catch (LiquibaseException ignored) {
-        
-        } catch (IOException e) {
+        } catch (LiquibaseException e) {
+            LOGGER.log(Level.ERROR, "An unexpected error occured while generating the database schema.");
+            LOGGER.log(Level.ERROR, e);
             e.printStackTrace();
         }
     }
     
+    
     @SuppressWarnings("unchecked")
-    private void setTable(Class clazz) throws NoSuchFieldException, IllegalAccessException {
-        Table oldAnnotation = (Table) clazz.getAnnotations()[0];
-        Annotation newAnnotation = new Table() {
-            
-            @Override
-            public Class<? extends Annotation> annotationType() {
-                return oldAnnotation.annotationType();
-            }
-            
-            @Override
-            public String value() {
-                return dbTablePrefix + oldAnnotation.value();
-            }
-        };
-        Field annotationDataField = Class.class.getDeclaredField("annotationData");
-        annotationDataField.setAccessible(true);
+    private void setTable(Class clazz) throws IllegalAccessException, NoSuchFieldException {
+        Table oldAnnotation = (Table) clazz.getAnnotation(Table.class);
         
-        Object annotationData = annotationDataField.get(Player.class);
+        Object handler = Proxy.getInvocationHandler(oldAnnotation);
+        Field f;
+        f = handler.getClass().getDeclaredField("memberValues");
+        f.setAccessible(true);
+        Map<String, Object> memberValues;
+        memberValues = (Map<String, Object>) f.get(handler);
         
-        Field annotationsField = annotationData.getClass().getDeclaredField("annotations");
-        annotationsField.setAccessible(true);
-        
-        Map<Class<? extends Annotation>, Annotation> annotations = (Map<Class<? extends Annotation>, Annotation>) annotationsField
-                .get(annotationData);
-        annotations.put(Table.class, newAnnotation);
+        Object oldValue = memberValues.get("value");
+        if (oldValue == null || oldValue.getClass() != (dbTablePrefix + oldAnnotation.value()).getClass()) {
+            throw new IllegalArgumentException();
+        }
+        memberValues.put("value", dbTablePrefix + oldAnnotation.value());
     }
     
     public static DatabaseHandler getInstance() {
