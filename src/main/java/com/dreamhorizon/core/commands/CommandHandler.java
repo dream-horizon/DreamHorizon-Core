@@ -56,6 +56,10 @@ public class CommandHandler {
         commands.forEach(command -> manager.registerCommand(command));
     }
     
+    public void unregister() {
+        manager.unregisterCommands();
+    }
+    
     public void registerCommand(DHCommand command) {
         commands.add(command);
     }

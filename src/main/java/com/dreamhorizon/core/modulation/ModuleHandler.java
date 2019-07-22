@@ -35,6 +35,7 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bukkit.Bukkit;
+import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.jetbrains.annotations.Nullable;
 
@@ -175,6 +176,8 @@ public class ModuleHandler {
         for (Module module : getModules()) {
             module.onDisable();
         }
+        
+        moduleListeners.forEach(HandlerList::unregisterAll);
     }
     
     /**

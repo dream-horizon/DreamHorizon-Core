@@ -77,6 +77,7 @@ public final class DHCore extends JavaPlugin {
     @Override
     public void onDisable() {
         super.onDisable();
+        commandHandler.unregister();
         moduleHandler.disableModules();
         // Close DatabaseHandler
         if (databaseHandler != null) {
