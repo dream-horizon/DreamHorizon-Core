@@ -44,21 +44,23 @@ public final class DHCore extends JavaPlugin {
         super.onLoad();
         // Update version
         ConfigurationHandler.getInstance().getConfig("core").set(CoreConfiguration.VERSION, this.getDescription().getVersion());
+        commandHandler = CommandHandler.getInstance();
+        // Modules before Database becauses database needs a list of objects.
+        moduleHandler = ModuleHandler.getInstance();
+        // database does some nice stuff.
+        databaseHandler = DatabaseHandler.getInstance();
     }
     
     @Override
     public void onEnable() {
         super.onEnable();
         // Essential Handlers.
-        // Commands before modules because modules need to hook into them.
-        commandHandler = CommandHandler.getInstance();
-        // Modules before Database becauses database needs a list of objects.
-        moduleHandler = ModuleHandler.getInstance();
-        databaseHandler = DatabaseHandler.getInstance();
         // Open DB Connection.
         if (databaseHandler != null) {
             databaseHandler.open();
         }
+        // Commands
+        commandHandler.register();
         // Listeners
         registerListeners();
         // Start the UpdateGlobalPlaceHolders runnable, which will just update our global placeholders every minute.

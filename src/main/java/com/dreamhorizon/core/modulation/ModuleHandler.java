@@ -35,6 +35,7 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bukkit.Bukkit;
+import org.bukkit.event.Listener;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
@@ -58,6 +59,7 @@ public class ModuleHandler {
     private static ModuleHandler instance;
     private final File moduleFolder = new File("plugins" + File.separator + "DHCore" + File.separator + "modules");
     private final HashMap<String, ModuleEntry> moduleEntries = new HashMap<>();
+    private final List<Listener> moduleListeners = new ArrayList<>();
     
     private ModuleHandler() {
         // Get the list of module jars.
@@ -129,24 +131,41 @@ public class ModuleHandler {
         
         for (ModuleEntry moduleEntry : getModuleEntries()) {
             Module module = moduleEntry.getModule();
+            module.onLoad();
+            
+            CommandHandler commandHandler = CommandHandler.getInstance();
             // add Configs
             if (module.getModuleConfigNodes() != null && !module.getModuleConfigNodes().isEmpty()) {
                 module.getModuleConfigNodes().forEach((s, aClass) -> ConfigurationHandler.getInstance().addConfig(s, aClass));
             }
             // add Listeners
             if (module.getListeners() != null && !module.getListeners().isEmpty()) {
-                module.getListeners().forEach(listener -> Bukkit.getPluginManager().registerEvents(listener, DHCore.getPlugin(DHCore.class)));
+                moduleListeners.addAll(module.getListeners());
+            }
+            // add Contexts
+            if (module.getCommandContexts() != null && !module.getCommandContexts().isEmpty()) {
+                module.getCommandContexts().forEach(commandHandler::registerContext);
+            }
+            // add Sync completions
+            if (module.getSyncCommandCompletions() != null && !module.getSyncCommandCompletions().isEmpty()) {
+                module.getSyncCommandCompletions().forEach(commandHandler::registerCompletion);
+            }
+            // add Async completions
+            if (module.getAsyncCommandCompletions() != null && !module.getAsyncCommandCompletions().isEmpty()) {
+                module.getAsyncCommandCompletions().forEach(commandHandler::registerAsyncCompletion);
             }
             // add Commands
             if (module.getCommands() != null && !module.getCommands().isEmpty()) {
-                module.getCommands().forEach(command -> CommandHandler.getInstance().registerCommand(command));
+                module.getCommands().forEach(commandHandler::registerCommand);
             }
-            // TODO: Command Completions, Contexts and Conditions (Aikar's Command Framework)
             
         }
     }
     
     public void enableModules() {
+        // Register modules
+        moduleListeners.forEach(listener -> Bukkit.getPluginManager().registerEvents(listener, DHCore.getPlugin(DHCore.class)));
+        
         for (Module module : getModules()) {
             module.onEnable();
         }

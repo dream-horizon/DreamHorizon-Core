@@ -18,9 +18,18 @@
 
 package com.dreamhorizon.core.commands;
 
+import co.aikar.commands.BukkitCommandCompletionContext;
+import co.aikar.commands.BukkitCommandExecutionContext;
+import co.aikar.commands.CommandCompletions;
 import co.aikar.commands.PaperCommandManager;
+import co.aikar.commands.contexts.ContextResolver;
 import com.dreamhorizon.core.DHCore;
 import com.dreamhorizon.core.commands.implementation.DHCommand;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 
 /**
  * @author Lukas Mansour
@@ -28,13 +37,39 @@ import com.dreamhorizon.core.commands.implementation.DHCommand;
  */
 public class CommandHandler {
     private static final CommandHandler instance = new CommandHandler();
-    private final PaperCommandManager manager = new PaperCommandManager(DHCore.getPlugin(DHCore.class));
+    private final List<DHCommand> commands = new ArrayList<>();
+    private final HashMap<String, CommandCompletions.CommandCompletionHandler<BukkitCommandCompletionContext>> completions = new HashMap<>();
+    private final HashMap<String, CommandCompletions.AsyncCommandCompletionHandler<BukkitCommandCompletionContext>> asyncCompletions = new HashMap<>();
+    private final HashMap<Class, ContextResolver<?, BukkitCommandExecutionContext>> contexts = new HashMap<>();
+    
+    private PaperCommandManager manager;
     
     private CommandHandler() {
+        completions.put("boolean", context -> Arrays.asList("true", "false"));
+    }
+    
+    public void register() {
+        manager = new PaperCommandManager(DHCore.getPlugin(DHCore.class));
+        completions.forEach((key, context) -> manager.getCommandCompletions().registerCompletion(key, context));
+        asyncCompletions.forEach((key, context) -> manager.getCommandCompletions().registerAsyncCompletion(key, context));
+        contexts.forEach((clazz, resolver) -> manager.getCommandContexts().registerContext(clazz, resolver));
+        commands.forEach(command -> manager.registerCommand(command));
     }
     
     public void registerCommand(DHCommand command) {
-        manager.registerCommand(command);
+        commands.add(command);
+    }
+    
+    public void registerCompletion(String key, CommandCompletions.CommandCompletionHandler<BukkitCommandCompletionContext> completionHandler) {
+        completions.put(key, completionHandler);
+    }
+    
+    public void registerAsyncCompletion(String key, CommandCompletions.AsyncCommandCompletionHandler<BukkitCommandCompletionContext> completionHandler) {
+        asyncCompletions.put(key, completionHandler);
+    }
+    
+    public void registerContext(Class toResolve, ContextResolver<?, BukkitCommandExecutionContext> resolver) {
+        contexts.put(toResolve, resolver);
     }
     
     public static CommandHandler getInstance() {

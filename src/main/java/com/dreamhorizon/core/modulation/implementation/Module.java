@@ -18,6 +18,10 @@
 
 package com.dreamhorizon.core.modulation.implementation;
 
+import co.aikar.commands.BukkitCommandCompletionContext;
+import co.aikar.commands.BukkitCommandExecutionContext;
+import co.aikar.commands.CommandCompletions;
+import co.aikar.commands.contexts.ContextResolver;
 import com.dreamhorizon.core.commands.implementation.DHCommand;
 import com.dreamhorizon.core.configuration.implementation.ConfigurationNode;
 import org.bukkit.event.Listener;
@@ -34,13 +38,33 @@ public abstract class Module {
     
     public abstract List<DHCommand> getCommands();
     
+    public void onLoad() {
+    
+    }
+    
     public abstract void onEnable();
     
     public abstract void onDisable();
     
     public abstract Map<String, Class<? extends ConfigurationNode>> getModuleConfigNodes();
     
-    public abstract String getSchemaResourcesPath();
+    public String getSchemaResourcesPath() {
+        return null;
+    }
     
-    public abstract List<String> getSchemaProperties();
+    public List<String> getSchemaProperties() {
+        return null;
+    }
+    
+    public Map<Class, ContextResolver<?, BukkitCommandExecutionContext>> getCommandContexts() {
+        return null;
+    }
+    
+    public Map<String, CommandCompletions.CommandCompletionHandler<BukkitCommandCompletionContext>> getSyncCommandCompletions() {
+        return null;
+    }
+    
+    public Map<String, CommandCompletions.AsyncCommandCompletionHandler<BukkitCommandCompletionContext>> getAsyncCommandCompletions() {
+        return null;
+    }
 }
