@@ -26,6 +26,10 @@ import com.dreamhorizon.core.database.DatabaseHandler;
 import com.dreamhorizon.core.logging.LoggingHandler;
 import com.dreamhorizon.core.modulation.ModuleHandler;
 import com.dreamhorizon.core.tasks.GlobalPlaceHolderTask;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
@@ -33,6 +37,7 @@ import org.bukkit.plugin.java.JavaPlugin;
  * @since 1.0
  */
 public final class DHCore extends JavaPlugin {
+    private static final Logger LOGGER = LogManager.getLogger("com.dreamhorizon.core");
     private final LoggingHandler loggingHandler = LoggingHandler.getInstance();
     private final ConfigurationHandler configurationHandler = ConfigurationHandler.getInstance();
     private CommandHandler commandHandler;
@@ -48,7 +53,17 @@ public final class DHCore extends JavaPlugin {
         // Modules before Database becauses database needs a list of objects.
         moduleHandler = ModuleHandler.getInstance();
         // database does some nice stuff.
-        databaseHandler = DatabaseHandler.getInstance();
+        try {
+            databaseHandler = DatabaseHandler.getInstance();
+        } catch (RuntimeException re) {
+            if (re.getMessage().equals("Failed to load ActiveJDBC")) {
+                databaseHandler = null;
+                LOGGER.log(Level.ERROR, "[Database] DreamHorizonCore failed to connect to the database.");
+                LOGGER.log(Level.ERROR, "[Database] DreamHorizonCore will not continue to load.");
+            } else {
+                throw re;
+            }
+        }
     }
     
     @Override
@@ -58,6 +73,9 @@ public final class DHCore extends JavaPlugin {
         // Open DB Connection.
         if (databaseHandler != null) {
             databaseHandler.open();
+        } else {
+            Bukkit.getPluginManager().disablePlugin(this);
+            return;
         }
         // Commands
         commandHandler.register();
@@ -77,12 +95,15 @@ public final class DHCore extends JavaPlugin {
     @Override
     public void onDisable() {
         super.onDisable();
+        if (databaseHandler == null) {
+            getLogger().info((String) ConfigurationHandler.getInstance().getConfig("messages").get(Message.CORE_DISABLED));
+            return;
+        }
         commandHandler.unregister();
         moduleHandler.disableModules();
         // Close DatabaseHandler
-        if (databaseHandler != null) {
-            databaseHandler.close();
-        }
+        databaseHandler.close();
+        
         getLogger().info((String) ConfigurationHandler.getInstance().getConfig("messages").get(Message.CORE_DISABLED));
     }
     

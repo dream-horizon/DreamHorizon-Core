@@ -23,6 +23,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.Appender;
 import org.apache.logging.log4j.core.Layout;
 import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.appender.ConsoleAppender;
 import org.apache.logging.log4j.core.appender.FileAppender;
 import org.apache.logging.log4j.core.config.AppenderRef;
 import org.apache.logging.log4j.core.config.Configuration;
@@ -51,54 +52,65 @@ public class LoggingHandler {
         
         // Get the standard layout for the new appenders
         Layout<String> layout = PatternLayout.newBuilder()
-                .withPattern(PatternLayout.SIMPLE_CONVERSION_PATTERN)
-                .withAlwaysWriteExceptions(false)
-                .withNoConsoleNoAnsi(false)
-                .withConfiguration(config)
-                .build();
-        
+            .withPattern(PatternLayout.SIMPLE_CONVERSION_PATTERN)
+            .withAlwaysWriteExceptions(false)
+            .withNoConsoleNoAnsi(false)
+            .withConfiguration(config)
+            .build();
         // ActiveJDBC
         appenders.add(
-                FileAppender.newBuilder()
-                        .withFileName("plugins" + File.separator + "DHCore" + File.separator + "logs" + File.separator + "ActiveJDBC.log")
-                        .withLocking(false)
-                        .withName("ActiveJDBC")
-                        .withIgnoreExceptions(false)
-                        .withBufferedIo(false)
-                        .withBufferSize(0)
-                        .withLayout(layout)
-                        .withAdvertise(false)
-                        .setConfiguration(config)
-                        .build()
+            FileAppender.newBuilder()
+                .withFileName("plugins" + File.separator + "DHCore" + File.separator + "logs" + File.separator + "ActiveJDBC.log")
+                .withLocking(false)
+                .withName("ActiveJDBC")
+                .withIgnoreExceptions(false)
+                .withBufferedIo(false)
+                .withBufferSize(0)
+                .withLayout(layout)
+                .withAdvertise(false)
+                .setConfiguration(config)
+                .build()
         );
         // Liquibase
         appenders.add(
-                FileAppender.newBuilder()
-                        .withFileName("plugins" + File.separator + "DHCore" + File.separator + "logs" + File.separator + "Liquibase.log")
-                        .withLocking(false)
-                        .withName("Liquibase")
-                        .withIgnoreExceptions(false)
-                        .withBufferedIo(false)
-                        .withBufferSize(0)
-                        .withLayout(layout)
-                        .withAdvertise(false)
-                        .setConfiguration(config)
-                        .build()
+            FileAppender.newBuilder()
+                .withFileName("plugins" + File.separator + "DHCore" + File.separator + "logs" + File.separator + "Liquibase.log")
+                .withLocking(false)
+                .withName("Liquibase")
+                .withIgnoreExceptions(false)
+                .withBufferedIo(false)
+                .withBufferSize(0)
+                .withLayout(layout)
+                .withAdvertise(false)
+                .setConfiguration(config)
+                .build()
         );
         
         // Our general logger
         appenders.add(
-                FileAppender.newBuilder()
-                        .withFileName("plugins" + File.separator + "DHCore" + File.separator + "logs" + File.separator + "Core.log")
-                        .withLocking(false)
-                        .withName("DHCore")
-                        .withIgnoreExceptions(false)
-                        .withBufferedIo(false)
-                        .withBufferSize(0)
-                        .withLayout(layout)
-                        .withAdvertise(false)
-                        .setConfiguration(config)
-                        .build()
+            FileAppender.newBuilder()
+                .withFileName("plugins" + File.separator + "DHCore" + File.separator + "logs" + File.separator + "Core.log")
+                .withLocking(false)
+                .withName("DHCore")
+                .withIgnoreExceptions(false)
+                .withBufferedIo(false)
+                .withBufferSize(0)
+                .withLayout(layout)
+                .withAdvertise(false)
+                .setConfiguration(config)
+                .build()
+        );
+        appenders.add(
+            ConsoleAppender.newBuilder()
+                .withName("DHCoreConsole")
+                .withLayout(PatternLayout.newBuilder()
+                    .withPattern("[DHCore] %m%n")
+                    .withAlwaysWriteExceptions(false)
+                    .withNoConsoleNoAnsi(false)
+                    .withConfiguration(config)
+                    .build())
+                .withBufferedIo(false)
+                .withBufferSize(0).build()
         );
         // Start appenders, give them the LoggerConfig and add their references to the referenceList
         for (Appender appender : appenders) {
@@ -113,6 +125,7 @@ public class LoggingHandler {
         liquibaseConf.addAppender(appenders.get(1), Level.ALL, null);
         LoggerConfig generalConf = LoggerConfig.createLogger(false, Level.ALL, "DHCore", null, appenderReferences.get(2), null, config, null);
         generalConf.addAppender(appenders.get(2), Level.ALL, null);
+        generalConf.addAppender(appenders.get(3), Level.ERROR, null);
         
         // Add the correct packages to the LoggerConfigs, so that those packages are forwarded to the said logger.
         config.addLogger("org.javalite", activeJDBCConf);

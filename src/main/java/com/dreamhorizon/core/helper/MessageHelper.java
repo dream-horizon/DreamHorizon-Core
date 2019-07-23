@@ -57,6 +57,8 @@ public class MessageHelper {
                 for (int i = 1; i <= m.groupCount(); i++) {
                     if (placeholders.get(m.group(i)) == null) {
                         msg = msg.replace("{" + m.group(i) + "}", "");
+                    } else if (placeholders.get(m.group(i)) instanceof Message) {
+                        msg = msg.replace("{" + m.group(i) + "}", formatMessage(placeholders, (Message) placeholders.get(m.group(i))));
                     } else {
                         msg = msg.replace("{" + m.group(i) + "}", String.valueOf(placeholders.get(m.group(i))));
                     }
@@ -108,7 +110,9 @@ public class MessageHelper {
         Matcher m = placeHolderPattern.matcher(message);
         while (m.find()) {
             for (int i = 1; i <= m.groupCount(); i++) {
-                if (placeholders.get(m.group(i)) != null) {
+                if (placeholders.get(m.group(i)) instanceof Message) {
+                    message = message.replace("{" + m.group(i) + "}", formatMessage(placeholders, (Message) placeholders.get(m.group(i))));
+                } else if (placeholders.get(m.group(i)) != null) {
                     message = message.replace("{" + m.group(i) + "}", String.valueOf(placeholders.get(m.group(i))));
                 }
             }

@@ -28,40 +28,40 @@ import com.dreamhorizon.core.configuration.implementation.ConfigurationSection;
 public enum CoreConfiguration implements ConfigurationNode {
     VERSION_SECTION("version", new ConfigurationSection()),
     VERSION("version.version", "",
-            "# This is the current version of SpigotPluginTemplate",
-            "# Please do not edit this value!"
+        "# This is the current version of SpigotPluginTemplate",
+        "# Please do not edit this value!"
     ),
     LATEST_RAN_VERSION("version.latest_ran_version", "",
-            "# This is the latest ran version of SpigotPluginTemplate",
-            "# Please do not edit this value!"),
+        "# This is the latest ran version of SpigotPluginTemplate",
+        "# Please do not edit this value!"),
     DATABASE_SECTION("database", new ConfigurationSection(),
-            " ",
-            "##############################",
-            "# +------------------------+ #",
-            "# | Database Configuration | #",
-            "# +------------------------+ #",
-            "##############################",
-            "# Valid DB types: mysql"
+        " ",
+        "##############################",
+        "# +------------------------+ #",
+        "# | Database Configuration | #",
+        "# +------------------------+ #",
+        "##############################",
+        "# Valid DB types: mysql"
     ),
     DATABASE_TABLE_PREFIX("database.table_prefix", "DHCORE_",
-            "# Database table prefix."),
+        "# Database table prefix."),
     DATABASE_TYPE("database.type", "mysql",
-            "# Database type."
+        "# Database type."
     ),
     DATABASE_HOSTNAME("database.hostname", "localhost",
-            "# Database hostname."
+        "# Database hostname."
     ),
     DATABASE_PORT("database.port", "3306",
-            "# Database port."
+        "# Database port."
     ),
     DATABASE_SCHEMA_NAME("database.schema", "minecraft",
-            "# Database schema."
+        "# Database schema."
     ),
     DATABASE_USERNAME("database.username", "root",
-            "# Database username."
+        "# Database username."
     ),
     DATABASE_PASSWORD("database.password", "password",
-            "# Database password."
+        "# Database password."
     );
     
     private final String path;

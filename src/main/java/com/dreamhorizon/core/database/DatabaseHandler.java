@@ -40,6 +40,7 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.javalite.activejdbc.DB;
+import org.javalite.activejdbc.InitException;
 import org.javalite.activejdbc.Model;
 import org.javalite.activejdbc.Registry;
 import org.javalite.activejdbc.annotations.Table;
@@ -78,9 +79,9 @@ public class DatabaseHandler {
         if ("mysql".equals(dbType.toLowerCase())) {
             driver = "com.mysql.jdbc.Driver";
             jdbcURL = "jdbc:mysql://" + coreConfig.get(CoreConfiguration.DATABASE_HOSTNAME)
-                    + ":" + coreConfig.get(CoreConfiguration.DATABASE_PORT)
-                    + "/" + coreConfig.get(CoreConfiguration.DATABASE_SCHEMA_NAME)
-                    + "?verifyServerCertificate=false&useSSL=false&useUnicode=true&characterEncoding=utf-8";
+                + ":" + coreConfig.get(CoreConfiguration.DATABASE_PORT)
+                + "/" + coreConfig.get(CoreConfiguration.DATABASE_SCHEMA_NAME)
+                + "?verifyServerCertificate=false&useSSL=false&useUnicode=true&characterEncoding=utf-8";
         } else {
             LOGGER.log(Level.ERROR, "[Database] " + dbType + " is not a valid database type!");
             throw new IllegalArgumentException(dbType + " is not a valid database type!");
@@ -93,15 +94,15 @@ public class DatabaseHandler {
             return;
         }
         try (ScanResult scanResult = new ClassGraph()
-                .addClassLoader(this.getClass().getClassLoader())
-                .enableClassInfo()
-                .ignoreClassVisibility()
-                .enableAnnotationInfo()
-                .whitelistPackages()
-                .disableDirScanning()
-                .disableNestedJarScanning()
-                .disableModuleScanning()
-                .scan()) {
+            .addClassLoader(this.getClass().getClassLoader())
+            .enableClassInfo()
+            .ignoreClassVisibility()
+            .enableAnnotationInfo()
+            .whitelistPackages()
+            .disableDirScanning()
+            .disableNestedJarScanning()
+            .disableModuleScanning()
+            .scan()) {
             ClassInfoList classInfoList = scanResult.getSubclasses(Model.class.getCanonicalName());
             if (classInfoList == null || classInfoList.isEmpty()) {
                 LOGGER.log(Level.DEBUG, "[Database] No objects were found for the database.");
@@ -150,13 +151,16 @@ public class DatabaseHandler {
             LOGGER.log(Level.ERROR, e);
             e.printStackTrace();
         }
-        
-        db = new DB("DreamHorizonCore");
-        // Connect to DB.
-        db.open(driver, jdbcURL, username, password);
-        // Liquibase generate Schema.
-        generateSchema(db.connection());
-        db.close();
+        try {
+            db = new DB("DreamHorizonCore");
+            // Connect to DB.
+            db.open(driver, jdbcURL, username, password);
+            // Liquibase generate Schema.
+            generateSchema(db.connection());
+            db.close();
+        } catch (InitException e) {
+            throw new RuntimeException("Failed to load ActiveJDBC");
+        }
     }
     
     public void open() {
@@ -171,8 +175,8 @@ public class DatabaseHandler {
         try {
             Database database = DatabaseFactory.getInstance().findCorrectDatabaseImplementation(new JdbcConnection(connection));
             Liquibase liquibase = new Liquibase(
-                    "db/database-master.xml",
-                    new ClassLoaderResourceAccessor(), database
+                "db/database-master.xml",
+                new ClassLoaderResourceAccessor(), database
             );
             // Add our own parameters here.
             liquibase.setChangeLogParameter("players", dbTablePrefix + "PLAYERS");

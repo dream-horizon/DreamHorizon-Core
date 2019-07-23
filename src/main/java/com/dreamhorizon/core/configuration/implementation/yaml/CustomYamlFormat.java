@@ -81,18 +81,18 @@ public class CustomYamlFormat implements ConfigFormat<CommentedConfig> {
     @Override
     public boolean supportsType(Class<?> type) {
         return type == null
-                || type.isEnum()
-                || type == Boolean.class
-                || type == String.class
-                || type == java.util.Date.class
-                || type == java.sql.Date.class
-                || type == java.sql.Timestamp.class
-                || type == byte[].class
-                || type == Object[].class
-                || Number.class.isAssignableFrom(type)
-                || Set.class.isAssignableFrom(type)
-                || List.class.isAssignableFrom(type)
-                || Config.class.isAssignableFrom(type);
+            || type.isEnum()
+            || type == Boolean.class
+            || type == String.class
+            || type == java.util.Date.class
+            || type == java.sql.Date.class
+            || type == java.sql.Timestamp.class
+            || type == byte[].class
+            || type == Object[].class
+            || Number.class.isAssignableFrom(type)
+            || Set.class.isAssignableFrom(type)
+            || List.class.isAssignableFrom(type)
+            || Config.class.isAssignableFrom(type);
     }
     
 }
