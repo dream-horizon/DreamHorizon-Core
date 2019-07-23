@@ -51,11 +51,17 @@ public class ModuleCommand extends DHCommand {
     @Syntax("(page)")
     @CommandPermission("dhcore.modules.list")
     public static void onModuleList(CommandSender sender, @Default(value = "1") int page) {
-        if (page == 0) page = 1;
+        if (page == 0) {
+            page = 1;
+        }
         List<ModuleEntry> paginatedModules = PaginationUtil.getPage(ModuleHandler.getInstance().getModuleEntries(), page, 8);
         int maxPage = (int) Math.ceil(paginatedModules.size() / 8.0);
-        if (maxPage == 0) maxPage = 1;
-        if (page > maxPage) page = maxPage;
+        if (maxPage == 0) {
+            maxPage = 1;
+        }
+        if (page > maxPage) {
+            page = maxPage;
+        }
         
         HashMap<String, Object> placeholders = new HashMap<>();
         placeholders.put("page", page);
