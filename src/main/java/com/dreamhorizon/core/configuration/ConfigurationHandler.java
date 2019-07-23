@@ -41,7 +41,7 @@ public class ConfigurationHandler {
         configs.put("messages", new EnumConfigurationBuilder(new File(configFolder + File.separator + "messages.yml"), Message.class).build());
     }
     
-    public <T extends Enum<T> & ConfigurationNode> void addConfig(String name, Class<? extends ConfigurationNode> enumClass) {
+    public void addConfig(String name, Class<? extends ConfigurationNode> enumClass) {
         configs.put(name, new EnumConfigurationBuilder(new File(configFolder + File.separator + name + ".yml"), enumClass).build());
     }
     

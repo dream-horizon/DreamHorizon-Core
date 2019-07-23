@@ -25,8 +25,20 @@ import com.dreamhorizon.core.configuration.implementation.ConfigurationNode;
  * @since 1.0
  */
 public enum Message implements ConfigurationNode {
-    CORE_ENABLED("core_enabled", "DreamHorizonCore has been fully enabled."),
-    CORE_DISABLED("core_disabled", "DreamHorizonCore has been fully disabled.");
+    YES("true", "&aYes"),
+    NO("false", "&cNo"),
+    CORE_ENABLED("core_enabled", "DreamHorizonCore has successfully been enabled."),
+    CORE_DISABLED("core_disabled", "DreamHorizonCore has successfully been disabled."),
+    MODULE_LIST_HEADER("module_list_header", "&7----- &9Modules &7-----"),
+    MODULE_LIST_ELEMENT("module_list_element", "&9Name: &6{moduleName} &9Author: &6{moduleAuthor} &9Enabled: &6{moduleEnabled}"),
+    MODULE_LIST_FOOTER("module_list_footer", "&9Page: &7{page}&9/&7{maxPage}"),
+    MODULE_INFO_1("module_info_1", "&9Name: &6{moduleName} &9Author: &6{moduleAuthor} &9Enabled: &6{moduleEnabled}"),
+    MODULE_INFO_2("module_info_2", "&9Number of listeners: &6{moduleListenerAmount}"),
+    MODULE_INFO_3("module_info_3", "&9Number of commands: &6{moduleCommandAmount}"),
+    MODULE_ENABLE_ALREADY_ENABLED("module_enable_already_enabled", "&cModule 6{moduleName} &cis already enabled!"),
+    MODULE_ENABLE_ENABLED("module_enable_enabled", "&cModule &6{moduleName} &cwas successfully enabled!"),
+    MODULE_DISABLE_ALREADY_DISABLED("module_disable_already_disabled", "&cModule 6{moduleName} &cis already disabled!"),
+    MODULE_DISABLE_DISABLED("module_disable_disabled", "&cModule &6{moduleName} &cwas successfully disabled!");
     
     private final String path;
     private final Object defaultValue;

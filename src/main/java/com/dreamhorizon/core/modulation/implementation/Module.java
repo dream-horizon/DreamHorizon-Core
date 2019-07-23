@@ -34,12 +34,13 @@ import java.util.Map;
  * @since 1.0
  */
 public abstract class Module {
+    private boolean enabled;
+    
     public abstract List<Listener> getListeners();
     
     public abstract List<DHCommand> getCommands();
     
     public void onLoad() {
-    
     }
     
     public abstract void onEnable();
@@ -66,5 +67,13 @@ public abstract class Module {
     
     public Map<String, CommandCompletions.AsyncCommandCompletionHandler<BukkitCommandCompletionContext>> getAsyncCommandCompletions() {
         return null;
+    }
+    
+    public boolean isEnabled() {
+        return enabled;
+    }
+    
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
     }
 }

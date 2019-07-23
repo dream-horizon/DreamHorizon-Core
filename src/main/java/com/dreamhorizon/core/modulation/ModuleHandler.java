@@ -36,7 +36,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bukkit.Bukkit;
 import org.bukkit.event.HandlerList;
-import org.bukkit.event.Listener;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
@@ -60,7 +59,6 @@ public class ModuleHandler {
     private static ModuleHandler instance;
     private final File moduleFolder = new File("plugins" + File.separator + "DHCore" + File.separator + "modules");
     private final HashMap<String, ModuleEntry> moduleEntries = new HashMap<>();
-    private final List<Listener> moduleListeners = new ArrayList<>();
     
     private ModuleHandler() {
         // Get the list of module jars.
@@ -94,13 +92,13 @@ public class ModuleHandler {
                 
                 // Use ClassGraph to get the newly loaded packages and search for the module's main class.
                 ScanResult scanResult = new ClassGraph()
-                        .enableAnnotationInfo()
-                        .disableRuntimeInvisibleAnnotations()
-                        .disableDirScanning()
-                        .disableModuleScanning()
-                        .disableNestedJarScanning()
-                        .whitelistJars(moduleJar.getName())
-                        .scan();
+                    .enableAnnotationInfo()
+                    .disableRuntimeInvisibleAnnotations()
+                    .disableDirScanning()
+                    .disableModuleScanning()
+                    .disableNestedJarScanning()
+                    .whitelistJars(moduleJar.getName())
+                    .scan();
                 // Get module class, which is annotated with @ModuleInfo
                 ClassInfoList classInfoListAnnotations = scanResult.getClassesWithAnnotation(ModuleInfo.class.getCanonicalName());
                 if (classInfoListAnnotations == null || classInfoListAnnotations.isEmpty()) {
@@ -123,8 +121,8 @@ public class ModuleHandler {
                 Module module = classLoader.loadClass(classInfo.getName()).asSubclass(Module.class).newInstance();
                 moduleEntries.put(moduleName, new ModuleEntry(moduleName, moduleAuthor, module));
             } catch (MalformedURLException | NoSuchMethodException |
-                    IllegalAccessException | InvocationTargetException |
-                    ClassNotFoundException | InstantiationException e) {
+                IllegalAccessException | InvocationTargetException |
+                ClassNotFoundException | InstantiationException e) {
                 LOGGER.log(Level.ERROR, "[Module] An unexpected error occured while importing module " + moduleJar.getName());
                 e.printStackTrace();
             }
@@ -138,10 +136,6 @@ public class ModuleHandler {
             // add Configs
             if (module.getModuleConfigNodes() != null && !module.getModuleConfigNodes().isEmpty()) {
                 module.getModuleConfigNodes().forEach((s, aClass) -> ConfigurationHandler.getInstance().addConfig(s, aClass));
-            }
-            // add Listeners
-            if (module.getListeners() != null && !module.getListeners().isEmpty()) {
-                moduleListeners.addAll(module.getListeners());
             }
             // add Contexts
             if (module.getCommandContexts() != null && !module.getCommandContexts().isEmpty()) {
@@ -164,20 +158,36 @@ public class ModuleHandler {
     }
     
     public void enableModules() {
-        // Register modules
-        moduleListeners.forEach(listener -> Bukkit.getPluginManager().registerEvents(listener, DHCore.getPlugin(DHCore.class)));
-        
         for (Module module : getModules()) {
-            module.onEnable();
+            if (module.isEnabled()) {
+                return;
+            }
+            enableModule(module);
         }
+    }
+    
+    public void enableModule(Module module) {
+        module.getListeners().forEach(listener -> Bukkit.getPluginManager().registerEvents(listener, DHCore.getPlugin(DHCore.class)));
+        module.onEnable();
+        module.setEnabled(true);
     }
     
     public void disableModules() {
         for (Module module : getModules()) {
-            module.onDisable();
+            if (!module.isEnabled()) {
+                return;
+            }
+            disableModule(module);
         }
+    }
+    
+    public void disableModule(Module module) {
+        CommandHandler commandHandler = CommandHandler.getInstance();
         
-        moduleListeners.forEach(HandlerList::unregisterAll);
+        module.getListeners().forEach(HandlerList::unregisterAll);
+        module.getCommands().forEach(commandHandler::unregisterCommand);
+        module.onEnable();
+        module.setEnabled(false);
     }
     
     /**
