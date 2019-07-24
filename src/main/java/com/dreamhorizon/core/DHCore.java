@@ -23,6 +23,7 @@ import com.dreamhorizon.core.configuration.ConfigurationHandler;
 import com.dreamhorizon.core.configuration.enums.CoreConfiguration;
 import com.dreamhorizon.core.configuration.enums.Message;
 import com.dreamhorizon.core.database.DatabaseHandler;
+import com.dreamhorizon.core.listeners.ServerListener;
 import com.dreamhorizon.core.logging.LoggingHandler;
 import com.dreamhorizon.core.modulation.ModuleHandler;
 import com.dreamhorizon.core.tasks.GlobalPlaceHolderTask;
@@ -90,6 +91,7 @@ public final class DHCore extends JavaPlugin {
     }
     
     private void registerListeners() {
+        Bukkit.getPluginManager().registerEvents(new ServerListener(), this);
     }
     
     @Override

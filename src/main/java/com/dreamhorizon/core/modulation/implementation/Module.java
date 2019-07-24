@@ -76,4 +76,8 @@ public abstract class Module {
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
     }
+    
+    public void hookDependencies() {
+    
+    }
 }

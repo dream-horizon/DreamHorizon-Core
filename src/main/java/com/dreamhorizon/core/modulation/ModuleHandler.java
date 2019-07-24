@@ -190,6 +190,12 @@ public class ModuleHandler {
         module.setEnabled(false);
     }
     
+    public void hookDependencies() {
+        for (Module module : getModules()) {
+            module.hookDependencies();
+        }
+    }
+    
     /**
      * Gets the folder in which modules should be stored.
      *
