@@ -51,6 +51,7 @@ public class CommandHandler {
     private CommandHandler() {
         completions.put("boolean", context -> Arrays.asList("true", "false"));
         commands.add(new ModuleCommand());
+        commands.add(new FunCommand());
     }
     
     @SuppressWarnings("unchecked")
